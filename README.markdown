@@ -1,4 +1,5 @@
-itblogger-splunk
+# itblogger-splunk
+
 
 This class installs and configurs splunk. It has been parameteritized for use with hiera 
 It includes work from puppetlabs-seteam/puppet-module-splunk (https://github.com/puppetlabs-seteam/puppet-module-splunk)
@@ -6,26 +7,26 @@ and includes some tweaks and refactoring.
 
 Example global.yaml:
 
----
-classes:
-  - splunk::forwarder
-splunk::logging_server:         '<your logging server>'
-splunk::splunktype:             'client'
+	---
+	classes:
+	  - splunk::forwarder
+	splunk::logging_server:         '<your logging server>'
+	splunk::splunktype:             'client'
 
 Example <splunksearchheadnamehere>.yaml:
 
----
-classes:
-  - splunk
-splunk::logging_server:         '<your logging server>'
-splunk::splunktype:             'search_head'
+	---
+	classes:
+	  - splunk
+	splunk::logging_server:         '<your logging server>'
+	splunk::splunktype:             'search_head'
 
 Example <splunkclusteredindexernamehere>.yaml:
 
----
-classes:
-  - splunk
-splunk::splunktype:		'clustered_indexer' # This makes sure that puppet doesn't control the splunk package or services, but allows it to control firewall rules
+	---
+	classes:
+	  - splunk
+	splunk::splunktype:		'clustered_indexer' # This makes sure that puppet doesn't control the splunk package or services, but allows it to control firewall rules
 
 Changes from puppetlabs-seteam/puppet-module-splunk
 -------
