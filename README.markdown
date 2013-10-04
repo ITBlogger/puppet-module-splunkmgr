@@ -1,7 +1,7 @@
 # itblogger-splunk
 
 
-This class installs and configurs splunk. It has been parameteritized for use with hiera 
+This class installs and configures splunk. It has been parameteritized for use with hiera 
 It includes work from puppetlabs-seteam/puppet-module-splunk (https://github.com/puppetlabs-seteam/puppet-module-splunk)
 and includes some tweaks and refactoring.
 
