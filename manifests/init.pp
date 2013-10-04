@@ -1,77 +1,168 @@
 # Class: splunk
 #
-# This class installs and configurs splunk. It is a paramaritized version of dhogland/splunk (https://github.com/dhogland/splunk) and includes some small bug fixes and tweaks as well. Modified by Will Ferrer and Ethan Brooks of Run the Business LLC
+# This class deploys Splunk on Linux, Windows, Solaris platforms.
 #
-# Further modified by Alex Scoble for use with hiera
+# Parameters:
 #
-
+# [*package_source*]
+#   The source URL for the splunk installation media (typically an RPM, MSI,
+#   etc). If a $src_root parameter is set in splunk::params, this will be
+#   automatically supplied. Otherwise it is required. The URL can be of any
+#   protocol supported by the nanliu/staging module.
+#
+# [*package_name*]
+#   The name of the package(s) as they will exist or be detected on the host.
+#
+# [*logging_port*]
+#   The port to recieve splunktcp logs on.
+#
+# [*splunkd_port*]
+#   The splunkd port. Used as a default for both splunk and splunk::forwarder.
+#
+# [*splunkd_listen*]
+#   The address on which splunkd should listen. Defaults to localhost only.
+#
+# [*web_port*]
+#   The port on which to serve the Splunk Web interface.
+#
+# [*purge_inputs*]
+#   If set to true, will remove any inputs.conf configuration not supplied by
+#   Puppet from the target system. Defaults to false.
+#
+# [*purge_outputs*]
+#   If set to true, will remove any outputs.conf configuration not supplied by
+#   Puppet from the target system. Defaults to false.
+#
+# Actions:
+#
+#   Declares parameters to be consumed by other classes in the splunk module.
+#
+# Requires: nothing
+#
 class splunk (
-  $deploy              = $splunk::params::deploy,
-  $splunk_ver          = $splunk::params::splunk_ver,
-  $logging_server      = $splunk::params::logging_server,
-  $syslogging_port     = $splunk::params::syslogging_port,
-  $logging_port        = $splunk::params::logging_port,
-  $splunkd_port        = $splunk::params::splunkd_port,
-  $admin_port          = $splunk::params::admin_port,
-  $splunk_admin        = $splunk::params::splunk_admin,
-  $splunk_admin_pass   = $splunk::params::splunk_admin_pass,
-  $installerfilespath  = $splunk::params::installerfilespath,
-  $windows_stage_drive = $splunk::params::windows_stage_drive,
-  $splunktype          = $splunk::params::splunktype,
+  $forwarder_confdir         = $splunk::params::forwarder_confdir,
+  $forwarder_install_options = $splunk::params::forwarder_install_options,
+  $forwarder_package_source  = $splunk::params::forwarder_package_source,
+  $forwarder_package_name    = $splunk::params::forwarder_package_name,
+  $forwarder_service         = $splunk::params::forwarder_service,
+  $forwarder_splunkd_port    = $splunk::params::forwarder_splunkd_port,
+  $forwarder_splunkd_listen  = $splunk::params::forwarder_splunkd_listen,
+  $logging_port              = $splunk::params::logging_port,
+  $package_source            = $splunk::params::package_source,
+  $path_delimiter            = $splunk::params::path_delimiter,
+  $pkg_provider              = $splunk::params::pkg_provider,
+  $purge_inputs              = $splunk::params::purge_inputs,
+  $purge_outputs             = $splunk::params::purge_outputs,
+  $server                    = $splunk::params::server,
+  $server_confdir            = $splunk::params::server_confdir,
+  $server_package_name       = $splunk::params::server_package_name,
+  $splunkd_port              = $splunk::params::splunkd_port,
+  $splunkd_listen            = $splunk::params::splunkd_listen,
+  $splunktype                = $splunk::params::splunktype,
+  $staging_subdir            = $splunk::params::staging_subdir,
+  $server_service            = $splunk::params::server_service
+  $web_port                  = $splunk::params::web_port,
 ) inherits splunk::params {
 
-  $installer = $deploy ? {
-    'server' => $::architecture ? {
-      'i386' => $::operatingsystem ? {
-        /(?i)(windows)/       => $::path ? {
-          #This evaluation is in here because of an issue identifying some windows architectures
-          /\(x86\)/           => "splunk-${splunk_ver}-x64-release.msi",
-          default             => "splunk-${splunk_ver}-x86-release.msi",
-          },
-      },
-      'x86_64' => $::operatingsystem ? {
-        /(?i)(windows)/       => "splunk-${splunk_ver}-x64-release.msi",
-      },
-      'amd64' => $::operatingsystem ? {
-        /(?i)(windows)/       => "splunk-${splunk_ver}-x64-release.msi",
-      },
-    },
-    'forwarder' => $::architecture ? {
-      'i386' => $::operatingsystem ? {
-        /(?i)(windows)/       => $::path ? {
-          #This evaluation is in here because of an issue identifying some windows architectures
-          /\(x86\)/           => "splunkforwarder-${splunk_ver}-x64-release.msi",
-          default             => "splunkforwarder-${splunk_ver}-x86-release.msi",
-        },
-      },
-      'x86_64' => $::operatingsystem ? {
-        /(?i)(windows)/       => "splunkforwarder-${splunk_ver}-x64-release.msi",
-      },
-      'amd64' => $::operatingsystem ? {
-        /(?i)(windows)/       => "splunkforwarder-${splunk_ver}-x64-release.msi",
-      },
-    },
-    'syslog' => undef,
+  include splunk::fw
+
+  unless ($splunktype == 'clustered_indexer') {
+    include staging
+
+    $staged_package  = staging_parse($package_source)
+    $pkg_path_parts  = [$staging::path, $staging_subdir, $staged_package]
+    $pkg_source      = join($pkg_path_parts, $path_delimiter)
+
+    staging::file { $staged_package:
+      source => $package_source,
+      subdir => $staging_subdir,
+      before => Package[$package_name],
     }
-  }
 
-  if $logging_server == undef {
-    fail('Error: no splunk logging server specified')
-  }
+    package { $server_package_name:
+      ensure   => installed,
+      provider => $pkg_provider,
+      source   => $pkg_source,
+      before   => Service[$server_service],
+      tag      => 'splunk_server',
+    }
 
-  case $::kernel {
-    /(?i)linux/: { include "$deploy" }
-    /(?i)windows/: { 
-      if $deploy == 'syslog' { 
-        notify {"Err":
-          message => "Syslog configuration is not available for ${::kernel} in this module.",
-        }
-      }
-      else { 
-        include "splunk::windows_$deploy" 
-#        Exec {
-#          path => "${::path}\;\"C:\\Program Files\\Splunk\\bin\""
-#        }
+    splunk_input { 'default_host':
+      section => 'default',
+      setting => 'host',
+      value   => $::clientcert,
+      tag     => 'splunk_server',
+    }
+    splunk_input { 'default_splunktcp':
+      section => "splunktcp://:${logging_port}",
+      setting => 'connection_host',
+      value   => 'dns',
+      tag     => 'splunk_server',
+    }
+    ini_setting { "splunk_server_splunkd_port":
+      path    => "${server_confdir}/web.conf",
+      section => 'settings',
+      setting => 'mgmtHostPort',
+      value   => "${splunkd_listen}:${splunkd_port}",
+      require => Package[$server_package_name],
+      notify  => Service[$server_service],
+    }
+    ini_setting { "splunk_server_web_port":
+      path    => "${server_confdir}/web.conf",
+      section => 'settings',
+      setting => 'httpport',
+      value   => $web_port,
+      require => Package[$server_package_name],
+      notify  => Service[$server_service],
+    }
+
+    # If the purge parameters have been set, remove all unmanaged entries from
+    # the inputs.conf and outputs.conf files, respectively.
+    if $purge_inputs  {
+      resources { 'splunkforwarder_input':  purge => true; }
+    }
+    if $purge_outputs {
+      resources { 'splunkforwarder_output': purge => true; }
+    }
+
+    # This is a module that supports multiple platforms. For some platforms
+    # there is non-generic configuration that needs to be declared in addition
+    # to the agnostic resources declared here.
+    case $::kernel {
+      default: { } # no special configuration needed
+      'Linux': { include splunk::platform::posix   }
+      'SunOS': { include splunk::platform::solaris }
+    }
+
+    # Realize resources shared between server and forwarder profiles, and set up
+    # dependency chains.
+    include splunk::virtual
+
+    # This realize() call is because the collectors don't seem to work well with
+    # arrays. They'll set the dependencies but not realize all Service resources
+    realize(Service[$server_service])
+
+    Package       <| title == $package_name   |> ->
+    Exec          <| tag   == 'splunk_server' |> ->
+    Service       <| title == $server_service |>
+
+    Package       <| title == $package_name   |> ->
+    Splunk_input  <| tag   == 'splunk_server' |> ~>
+    Service       <| title == $server_service |>
+
+    Package       <| title == $package_name   |> ->
+    Splunk_output <| tag   == 'splunk_server' |> ~>
+    Service       <| title == $server_service |>
+
+    # Validate: if both Splunk and Splunk Universal Forwarder are installed on
+    # the same system, then they must use different admin ports.
+    if (defined(Class['splunk']) and defined(Class['splunk::forwarder'])) {
+      if $splunkd_port == $forwarder_splunkd_port {
+        fail(regsubst("Both splunk and splunk::forwarder are included, but both
+          are configured to use the same splunkd port (${splunkd_port}). Please either
+          include only one of splunk, splunk::forwarder, or else configure them
+          to use non-conflicting splunkd ports.", '\s\s+', ' ', 'G')
+        )
       }
     }
   }
