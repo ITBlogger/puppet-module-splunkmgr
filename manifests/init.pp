@@ -29,7 +29,7 @@ class splunk (
   $server                    = $splunk::params::server,
   $server_confdir            = $splunk::params::server_confdir,
   $server_package_name       = $splunk::params::server_package_name,
-  $server_service            = $splunk::params::server_service
+  $server_service            = $splunk::params::server_service,
   $splunkd_port              = $splunk::params::splunkd_port,
   $splunkd_listen            = $splunk::params::splunkd_listen,
   $splunktype                = $splunk::params::splunktype,
