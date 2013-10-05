@@ -68,22 +68,22 @@
 #
 class splunk::params {
 
-  $build                    = '182037',
-  $forwarder_splunkd_port   = '18089',
-  $forwarder_splunkd_listen = '127.0.0.1',
-  $logging_port             = '9997',
-  $package_name             = 'splunk',
-  $purge_inputs             = false,
-  $purge_outputs            = false,
-  $server                   = 'splunk',
-  $splunkd_listen           = '127.0.0.1',
-  $splunkd_port             = '8089',
-  $splunktype               = 'client', #valid values are client (non-forwarding universal forwarder), cluster_manager, clustered_indexer, forwarder (forwarding universal forwarder), heavy_forwarder, indexer, search_head
-  $src_root                 = 'http://repo/test/3rdparty/splunk',
-  $staging_subdir           = 'splunk',
-  $syslogging_port          = '514',
-  $version                  = '6.0',
-  $web_port                 = '8000'
+  $build                    = '182037'
+  $forwarder_splunkd_port   = '18089'
+  $forwarder_splunkd_listen = '127.0.0.1'
+  $logging_port             = '9997'
+  $package_name             = 'splunk'
+  $purge_inputs             = false
+  $purge_outputs            = false
+  $server                   = 'splunk'
+  $splunkd_listen           = '127.0.0.1'
+  $splunkd_port             = '8089'
+  $splunktype               = 'client' #valid values are client (non-forwarding universal forwarder), cluster_manager, clustered_indexer, forwarder (forwarding universal forwarder), heavy_forwarder, indexer, search_head
+  $src_root                 = 'http://repo/test/3rdparty/splunk'
+  $staging_subdir           = 'splunk'
+  $syslogging_port          = '514'
+  $version                  = '6.0'
+  $web_port                 = '8000
 
   # Based on the small number of inputs above, we can construct sane defaults
   # for pretty much everything else.
