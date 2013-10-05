@@ -78,9 +78,10 @@ class splunk::params {
   $server                   = 'splunk',
   $splunkd_listen           = '127.0.0.1',
   $splunkd_port             = '8089',
-  $splunktype               = 'client', #valid values are client, indexer, clustered_indexer, search_head, forwarder and cluster_manager
+  $splunktype               = 'client', #valid values are client (non-forwarding universal forwarder), cluster_manager, clustered_indexer, forwarder (forwarding universal forwarder), heavy_forwarder, indexer, search_head
   $src_root                 = 'http://repo/test/3rdparty/splunk',
   $staging_subdir           = 'splunk',
+  $syslogging_port          = '514',
   $version                  = '6.0',
   $web_port                 = '8000'
 

@@ -3,41 +3,14 @@
 # This class deploys Splunk on Linux, Windows, Solaris platforms.
 #
 # Parameters:
-#
-# [*package_source*]
-#   The source URL for the splunk installation media (typically an RPM, MSI,
-#   etc). If a $src_root parameter is set in splunk::params, this will be
-#   automatically supplied. Otherwise it is required. The URL can be of any
-#   protocol supported by the nanliu/staging module.
-#
-# [*package_name*]
-#   The name of the package(s) as they will exist or be detected on the host.
-#
-# [*logging_port*]
-#   The port to recieve splunktcp logs on.
-#
-# [*splunkd_port*]
-#   The splunkd port. Used as a default for both splunk and splunk::forwarder.
-#
-# [*splunkd_listen*]
-#   The address on which splunkd should listen. Defaults to localhost only.
-#
-# [*web_port*]
-#   The port on which to serve the Splunk Web interface.
-#
-# [*purge_inputs*]
-#   If set to true, will remove any inputs.conf configuration not supplied by
-#   Puppet from the target system. Defaults to false.
-#
-# [*purge_outputs*]
-#   If set to true, will remove any outputs.conf configuration not supplied by
-#   Puppet from the target system. Defaults to false.
+# 
+#   Please see params.pp for a description of parameters used
 #
 # Actions:
 #
 #   Declares parameters to be consumed by other classes in the splunk module.
 #
-# Requires: nothing
+# Requires: Puppet 3 and Puppet Labs Firewall module
 #
 class splunk (
   $forwarder_confdir         = $splunk::params::forwarder_confdir,
@@ -56,11 +29,12 @@ class splunk (
   $server                    = $splunk::params::server,
   $server_confdir            = $splunk::params::server_confdir,
   $server_package_name       = $splunk::params::server_package_name,
+  $server_service            = $splunk::params::server_service
   $splunkd_port              = $splunk::params::splunkd_port,
   $splunkd_listen            = $splunk::params::splunkd_listen,
   $splunktype                = $splunk::params::splunktype,
   $staging_subdir            = $splunk::params::staging_subdir,
-  $server_service            = $splunk::params::server_service
+  $syslogging_port           = $splunk::params::syslogging_port,
   $web_port                  = $splunk::params::web_port,
 ) inherits splunk::params {
 
