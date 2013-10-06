@@ -5,8 +5,8 @@ does a lot of complicated procedures that are unnecessary when using a private r
 still required for Windows to make sure that the Windows Puppet provider is able to pull down the correct file
 depending on the version of Windows that the Puppet agent is running on.
 
-Also need to move the staging classes to their own files as nesting classes is frowned upon now in Puppet and will
-eventually be deprecated.
+Need to remove the Staging nested class from both init.pp and forwarder.pp. It shouldn't be necessary since this
+module will be leveraging repos and the updated installer providers.
 
 
 This class installs and configures splunk. It has been parameteritized for use with hiera 
