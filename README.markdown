@@ -34,6 +34,7 @@ Example <splunkclusteredindexernamehere>.yaml:
 	splunk::splunktype:		'clustered_indexer' # This makes sure that puppet doesn't control the splunk package or services, but allows it to control firewall rules
 
 Possible parameters that can be overriden in hiera and their defaults are:
+
 	splunk::splunktype:			'client'	# used to set type of splunk system. Allows more granular control than just is it a universal forwarder or server
 	splunk::build:          	 	'182037'	# used to set the build of splunk to be installed
 	splunk::forwarder_splunkd_port 		'18089'		# used to set the universal forwarder splunkd port that allows management by Splunk Deployment Server
