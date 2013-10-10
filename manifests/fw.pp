@@ -1,41 +1,50 @@
-class splunk::fw inherits splunk {
+class splunkmgr::fw inherits splunkmgr {
 
-  if ($splunktype in ['cluster_manager', 'clustered_indexer', 'heavy_forwarder', 'indexer', 'search_head']) {
-    
-    firewall { '100 allow Splunk Console':
-      action => 'accept',
+  if $splunk_type in ['cluster-manager', 'clustered-indexer', 'heavy-forwarder', 'indexer', 'search-head'] {
+    firewall { '100 Accept new tcp Splunk web connections':
       proto  => 'tcp',
-      dport  => "${web_port}",
+      state  => 'NEW',
+      dport  => "${splunk_web_port}",
+      action => 'accept',
     }
   }
 
-  if ($splunktype in ['clustered_indexer', 'indexer']) {
-    firewall { '100 allow Splunkd':
-      action => 'accept',
+  if $splunk_type in ['clustered-indexer', 'forwarder', 'heavy-forwarder', 'indexer'] {
+    firewall { '100 Accept new tcp Splunk logging connections':
       proto  => 'tcp',
-      dport  => "${splunkd_port}",
+      state  => 'NEW',
+      dport  => "${splunk_logging_port}",
+      action => 'accept',
     }
-  }
-
-  if ($splunktype in ['clustered_indexer', 'heavy_forwarder', 'indexer']) {
-
-    firewall { '100 allow splunktcp logging in':
-      action => 'accept',
+    firewall { '100 Accept new tcp syslog connections':
       proto  => 'tcp',
-      dport  => "${logging_port}",
-    }
-  }
-
-  if ($splunktype in ['clustered_indexer', 'forwarder', 'heavy_forwarder', 'indexer']) {
-    firewall { '100 allow tcp syslog logging in':
-      action => 'accept',
-      proto  => 'tcp',
+      state  => 'NEW',
       dport  => "${syslogging_port}",
-    }
-    firewall { '100 allow udp syslog logging in':
       action => 'accept',
+    }
+    firewall { '100 Accept new udp syslog connections':
       proto  => 'udp',
+      state  => 'NEW',
       dport  => "${syslogging_port}",
+      action => 'accept',
+    }
+  }
+
+  if $splunk_type in ['cluster-manager', 'clustered-indexer', 'indexer'] {
+    firewall { '100 Accept new tcp Splunk daemon connections':
+      proto  => 'tcp',
+      state  => 'NEW',
+      dport  => "${splunkd_port}",
+      action => 'accept',
+    }
+  }
+
+  if $splunk_type in ['clustered-indexer'] {
+    firewall { '100 Accept new tcp Splunk peer cluster connections':
+      proto  => 'tcp',
+      state  => 'NEW',
+      dport  => "${splunk_cluster_port}",
+      action => 'accept',
     }
   }
 

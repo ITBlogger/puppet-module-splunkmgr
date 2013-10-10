@@ -1,144 +1,73 @@
-# Class: splunk
+# Class: splunkmgr
 #
-# This class deploys Splunk on Linux, Windows, Solaris platforms.
+# This class deploys and manages Splunk servers and universal forwarders on linux and Windows
 #
 # Parameters:
+#
+# Defaults for all parameters are set in params.pp. Use hiera yaml files if any of the defaults need to be overridden for specific nodes, domains, operating systems, Puppet environments or globally 
+#
+# [*splunk_logging_port*]
+#   The port that Splunk forwarders and indexers use to receive splunktcp logs on
 # 
-#   Please see params.pp for a description of parameters used
+# [*splunk_type*]
+#   The type of system that a particular node is. Currently the usable values are: 'client', 'cluster-manager', 'clustered-indexer', 'forwarder', 'heavy-forwarder', 'indexer', 'search-head'
+#   'client' is used for any Puppet managed Windows or linux systems that require the universal forwarder and will not receive logs from other devices or nodes
+#   'cluster-manager' is used for any Puppet managed linux servers that are used to manage a group of clustered indexers
+#   'clustered-indexer' is used for any Puppet managed linux servers that are serving as clustered indexers. The Splunk software and services on this type of system is managed by the cluster-manager and not by Puppet.
+#      Only linux configurations such as firewall settings are managed by Puppet on these systems
+#   'forwarder' is used for any Puppet managed Windows or linux systems that require the universal forwarder and will receive logs (either syslog or Splunk) from other devices or nodes
+#   'heavy-forwarder' is used for any Puppet managed linux systems that have the full Splunk product installed, but are only configured to receive logs and forward them to other forwarders or indexers
+#   'indexer' is used for any Puppet managed linux systems that will serve as normal non-clustered indexers
+#   'search-head' is used for any Puppet managed linux systems that will serve as Splunk search heads
 #
-# Actions:
+# [*splunk_web_port*]
+#   The port that admins and analysts use to connect to the Splunk web UI
 #
-#   Declares parameters to be consumed by other classes in the splunk module.
+# [*splunkd_port*]
+#   The port that search heads use to communicate with indexers and indexer clusters. It is also used by the cluster manager to manage clustered indexers. I can be used by deployment server to manage clients as well, but we leverage
+#     Puppet for that
 #
-# Requires: Puppet 3 and Puppet Labs Firewall module
+# [*syslogging_port*]
+#   The port that indexers, forwarders and heavy forwarders will receive syslog traffic on
 #
-class splunk (
-  $forwarder_confdir         = $splunk::params::forwarder_confdir,
-  $forwarder_install_options = $splunk::params::forwarder_install_options,
-  $forwarder_package_source  = $splunk::params::forwarder_package_source,
-  $forwarder_package_name    = $splunk::params::forwarder_package_name,
-  $forwarder_service         = $splunk::params::forwarder_service,
-  $forwarder_splunkd_port    = $splunk::params::forwarder_splunkd_port,
-  $forwarder_splunkd_listen  = $splunk::params::forwarder_splunkd_listen,
-  $logging_port              = $splunk::params::logging_port,
-  $package_source            = $splunk::params::package_source,
-  $path_delimiter            = $splunk::params::path_delimiter,
-  $pkg_provider              = $splunk::params::pkg_provider,
-  $purge_inputs              = $splunk::params::purge_inputs,
-  $purge_outputs             = $splunk::params::purge_outputs,
-  $server                    = $splunk::params::server,
-  $server_confdir            = $splunk::params::server_confdir,
-  $server_package_name       = $splunk::params::server_package_name,
-  $server_service            = $splunk::params::server_service,
-  $splunkd_port              = $splunk::params::splunkd_port,
-  $splunkd_listen            = $splunk::params::splunkd_listen,
-  $splunktype                = $splunk::params::splunktype,
-  $staging_subdir            = $splunk::params::staging_subdir,
-  $syslogging_port           = $splunk::params::syslogging_port,
-  $web_port                  = $splunk::params::web_port,
-) inherits splunk::params {
+# Requires: Puppet Labs Firewall module and hiera
+#
+class splunkmgr (
+  $forwarder_confdir         = $splunkmgr::params::forwarder_confdir,
+  $forwarder_install_options = $splunkmgr::params::forwarder_install_options,
+  $forwarder_installer_path  = $splunkmgr::params::forwarder_installer_path,
+  $forwarder_package_name    = $splunkmgr::params::forwarder_package_name,
+  $forwarder_service         = $splunkmgr::params::forwarder_service,
+  $forwarder_splunkd_address = $splunkmgr::params::forwarder_splunkd_address,
+  $forwarder_splunkd_port    = $splunkmgr::params::forwarder_splunkd_port,
+  $forwarder_src_pkg         = $splunkmgr::params::forwarder_src_pkg,
+  $installer_root            = $splunkmgr::params::installer_root,
+  $path_delimiter            = $splunkmgr::params::path_delimiter,
+  $pkg_provider              = $splunkmgr::params::pkg_provider,
+  $server_confdir            = $splunkmgr::params::server_confdir,
+  $server_package_name       = $splunkmgr::params::server_package_name,
+  $splunk_cluster_port       = $splunkmgr::params::splunk_cluster_port,
+  $splunk_logging_port       = $splunkmgr::params::splunk_logging_port,
+  $splunk_type               = $splunkmgr::params::splunk_type,
+  $splunk_web_port           = $splunkmgr::params::splunk_web_port,
+  $splunkd_address           = $splunkmgr::params::splunkd_address,
+  $splunkd_port              = $splunkmgr::params::splunkd_port,
+  $syslogging_port           = $splunkmgr::params::syslogging_port,
+  $tcpout_defaultgroup       = $splunkmgr::params::tcpout_defaultgroup,
+  $tcpout_server             = $splunkmgr::params::tcpout_server,
+  $tcpout_useack             = $splunkmgr::params::tcpout_useack,
+) inherits splunkmgr::params {
 
-  include splunk::fw
-
-  unless ($splunktype == 'clustered_indexer') {
-    include staging
-
-    $staged_package  = staging_parse($package_source)
-    $pkg_path_parts  = [$staging::path, $staging_subdir, $staged_package]
-    $pkg_source      = join($pkg_path_parts, $path_delimiter)
-
-    staging::file { $staged_package:
-      source => $package_source,
-      subdir => $staging_subdir,
-      before => Package[$package_name],
-    }
-
-    package { $server_package_name:
-      ensure   => installed,
-      provider => $pkg_provider,
-      source   => $pkg_source,
-      before   => Service[$server_service],
-      tag      => 'splunk_server',
-    }
-
-    splunk_input { 'default_host':
-      section => 'default',
-      setting => 'host',
-      value   => $::clientcert,
-      tag     => 'splunk_server',
-    }
-    splunk_input { 'default_splunktcp':
-      section => "splunktcp://:${logging_port}",
-      setting => 'connection_host',
-      value   => 'dns',
-      tag     => 'splunk_server',
-    }
-    ini_setting { "splunk_server_splunkd_port":
-      path    => "${server_confdir}/web.conf",
-      section => 'settings',
-      setting => 'mgmtHostPort',
-      value   => "${splunkd_listen}:${splunkd_port}",
-      require => Package[$server_package_name],
-      notify  => Service[$server_service],
-    }
-    ini_setting { "splunk_server_web_port":
-      path    => "${server_confdir}/web.conf",
-      section => 'settings',
-      setting => 'httpport',
-      value   => $web_port,
-      require => Package[$server_package_name],
-      notify  => Service[$server_service],
-    }
-
-    # If the purge parameters have been set, remove all unmanaged entries from
-    # the inputs.conf and outputs.conf files, respectively.
-    if $purge_inputs  {
-      resources { 'splunkforwarder_input':  purge => true; }
-    }
-    if $purge_outputs {
-      resources { 'splunkforwarder_output': purge => true; }
-    }
-
-    # This is a module that supports multiple platforms. For some platforms
-    # there is non-generic configuration that needs to be declared in addition
-    # to the agnostic resources declared here.
-    case $::kernel {
-      default: { } # no special configuration needed
-      'Linux': { include splunk::platform::posix   }
-      'SunOS': { include splunk::platform::solaris }
-    }
-
-    # Realize resources shared between server and forwarder profiles, and set up
-    # dependency chains.
-    include splunk::virtual
-
-    # This realize() call is because the collectors don't seem to work well with
-    # arrays. They'll set the dependencies but not realize all Service resources
-    realize(Service[$server_service])
-
-    Package       <| title == $package_name   |> ->
-    Exec          <| tag   == 'splunk_server' |> ->
-    Service       <| title == $server_service |>
-
-    Package       <| title == $package_name   |> ->
-    Splunk_input  <| tag   == 'splunk_server' |> ~>
-    Service       <| title == $server_service |>
-
-    Package       <| title == $package_name   |> ->
-    Splunk_output <| tag   == 'splunk_server' |> ~>
-    Service       <| title == $server_service |>
-
-    # Validate: if both Splunk and Splunk Universal Forwarder are installed on
-    # the same system, then they must use different admin ports.
-    if (defined(Class['splunk']) and defined(Class['splunk::forwarder'])) {
-      if $splunkd_port == $forwarder_splunkd_port {
-        fail(regsubst("Both splunk and splunk::forwarder are included, but both
-          are configured to use the same splunkd port (${splunkd_port}). Please either
-          include only one of splunk, splunk::forwarder, or else configure them
-          to use non-conflicting splunkd ports.", '\s\s+', ' ', 'G')
-        )
-      }
-    }
+  if $::operatingsystem in ['CentOS', 'RedHat'] {
+    include splunkmgr::fw
   }
 
+  if $splunk_type in ['client', 'forwarder'] {
+    include splunkmgr::forwarder
+  }
+ 
+  if $splunk_type in ['cluster-manager', 'heavy-forwarder', 'indexer', 'search-head'] {
+    include splunkmgr::server
+  }
+  
 }
