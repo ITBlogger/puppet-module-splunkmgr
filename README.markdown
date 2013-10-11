@@ -1,6 +1,14 @@
 # itblogger-splunk
 
 This class is a work in progress and currently is only tested to work with CentOS/RedHat. It has functionality for Windows, but has not been tested and isn't yet complete.
+=======
+This class is a work in progress and does not currently function. The SETeam module that I'm basing this off of
+does a lot of complicated procedures that are unnecessary when using a private repo with yum or apt. Some logic is
+still required for Windows to make sure that the Windows Puppet provider is able to pull down the correct file
+depending on the version of Windows that the Puppet agent is running on.
+
+Need to remove the Staging nested class from both init.pp and forwarder.pp. It shouldn't be necessary since this
+module will be leveraging repos and the updated installer providers.
 
 This class installs and configures splunk. It has been parameteritized for use with hiera 
 It includes work from puppetlabs-seteam/puppet-module-splunk (https://github.com/puppetlabs-seteam/puppet-module-splunk)
@@ -19,7 +27,7 @@ Example <splunksearchheadnamehere>.yaml:
 	---
 	classes:
 	  - splunk
-	splunk::logging_server:         '<your logging server>'
+	splunk::logging_server:         '<your logging server>' # You would enter a different FQDN for a forwarder if necessary, otherwise leave this out and use the default set in global or params.pp
 	splunk::splunktype:             'search_head'
 
 Example <splunkclusteredindexernamehere>.yaml:
