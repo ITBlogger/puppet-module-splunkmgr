@@ -1,4 +1,4 @@
-# itblogger-splunk
+## splunkmgr
 
 This class is a work in progress and currently is only tested to work with CentOS/RedHat. It has functionality for Windows, but has not been tested and isn't yet complete.
 
@@ -19,7 +19,8 @@ Example <splunksearchheadnamehere>.yaml:
 	---
 	classes:
 	  - splunkmgr
-	splunkmgr::tcpout_server:	'<your logging server>' # You would enter a different FQDN for a forwarder if necessary, otherwise leave this out and use the default set in global or params.pp
+	splunkmgr::tcpout_server:	'<your logging server>' # You would enter a different FQDN for a forwarder if necessary,
+                                                                #  otherwise leave this out and use the default set in global or params.pp
 	splunkmgr::splunk_type:		'search_head'
 
 Example <splunkclusteredindexernamehere>.yaml:
@@ -27,7 +28,10 @@ Example <splunkclusteredindexernamehere>.yaml:
 	---
 	classes:
 	  - splunkmgr
-	splunkmgr::splunk_type:		'clustered-indexer' # This makes sure that puppet doesn't control the splunk package or services, but allows it to control firewall rules
+	splunkmgr::splunk_type:		'clustered-indexer' # This makes sure that puppet doesn't control the splunk package 
+                                                            # or services, but allows it to control firewall rules
+                                                            # Some management functionality for clustered indexers may be added later
+                                                            # since some files are not managed by the cluster manager
 
 Possible parameters that can be overridden in hiera and their defaults are:
 
@@ -64,6 +68,7 @@ Parameters that shouldn't be overridden by hiera, but are called out in init.pp 
 - Module matches up with style of Puppet Labs recommendations (see the Puppet Labs NTP module as I used that as my reference)
 - Class paramaritized so it can work with out the enterprise console (hiera is the one true way)
 - Switched installers to use an internal repo instead of Puppet (our repos are all configured to be at http://repo but you can use whatever you want)
+- Combo.pp is still in the module, but is not currently used as it doesn't seem necessary at all to install Universal Forwarder on same system that has full Splunk server installed
 
 Authors
 -------
