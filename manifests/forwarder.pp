@@ -114,16 +114,9 @@ class splunkmgr::forwarder inherits splunkmgr {
     }
 
     if $::osfamily in ['Debian', 'RedHat'] {
-      splunk_conf { 'monitor_var_log_messages':
-        config_file  => "${forwarder_confdir}${path_delimiter}inputs.conf",
-        stanza       => 'monitor:///var/log/messages',
-        set          => {
-          sourcetype => 'syslog',
-        },
-        ensure       => 'present',
-        require      => Splunk_conf['forwarder_webconf_settings'],
-        notify       => Service['splunk'],
-      }
+
+      include splunkmgr::splunk_app_for_nix
+
     }
     elsif $::osfamily == 'Windows' {
     }

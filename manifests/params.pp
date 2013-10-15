@@ -22,7 +22,7 @@ class splunkmgr::params {
   $splunkd_port              = '8089' 
   $syslogging_port           = '514'  
   $tcpout_defaultgroup       = 'splunkloadbal_autolb_group'
-  $tcpout_server             = 'splunkloadbal'
+  $tcpout_server             = 'splunkloadbal.ccnlab.dittdsh.org'
   $tcpout_useack             = 'true'
 
   # Settings common to a kernel

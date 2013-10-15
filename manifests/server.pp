@@ -84,15 +84,6 @@ class splunkmgr::server inherits splunkmgr {
       }
     }
 
-    splunk_conf { 'monitor_var_log_messages':
-      config_file  => "${server_confdir}/inputs.conf",
-      stanza       => 'monitor:///var/log/messages',
-      set          => {
-        sourcetype => 'syslog',
-      },
-      ensure       => 'present',
-      require      => Exec['enable_splunk'],
-    }
     splunk_conf { 'server_webconf_settings':
       config_file    => "${server_confdir}${path_delimiter}web.conf",
       stanza         => 'settings',
@@ -103,6 +94,8 @@ class splunkmgr::server inherits splunkmgr {
       require        => Splunk_conf['monitor_var_log_messages'],
       notify         => Service['splunk'],
     }
+
+    include splunkmgr::splunk_app_for_nix
      
     service { 'splunk':
       ensure     => true,
